@@ -22,6 +22,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1
 .exercise-btn:last-child{border-bottom:none}
 .exercise-btn:active{background:#f5f5f5}
 .exercise-btn .last{font-size:13px;color:#888}
+.exercise-row{display:flex;align-items:stretch;border-bottom:0.5px solid #f0f0f0}
+.exercise-row:last-child{border-bottom:none}
+.exercise-row .exercise-btn{border-bottom:none;flex:1}
+.exercise-del{background:none;border:none;border-left:0.5px solid #f0f0f0;padding:0 16px;cursor:pointer;color:#ccc;font-size:20px;-webkit-tap-highlight-color:transparent}
+.exercise-del:active{background:#fee2e2;color:#ef4444}
 .info-box{background:#f5f5f5;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#666;border-left:3px solid #ddd}
 .add-row{display:flex;gap:8px;padding:10px 12px}
 .add-row input{flex:1;border:0.5px solid #e5e5e5;border-radius:10px;padding:10px 12px;font-size:15px;background:#fafafa;color:#1a1a1a;outline:none;-webkit-appearance:none}
@@ -226,17 +231,37 @@ function getSuggestion(last) {
 }
 
 // ── Render ───────────────────────────────────────────────────────
+function makeExerciseRow(ex, type, lastText) {
+  const row = document.createElement('div');
+  row.className = 'exercise-row';
+  const btn = document.createElement('button');
+  btn.className = 'exercise-btn';
+  btn.innerHTML = `<span>${ex}</span><span class="last">${lastText}</span>`;
+  btn.onclick = () => openLog(ex, type);
+  const del = document.createElement('button');
+  del.className = 'exercise-del';
+  del.textContent = '×';
+  del.onclick = () => deleteExercise(ex, type);
+  row.appendChild(btn);
+  row.appendChild(del);
+  return row;
+}
+
+async function deleteExercise(name, type) {
+  if (!confirm(`Ta bort "${name}"? Historiken sparas kvar.`)) return;
+  exercises[type] = exercises[type].filter(e => e !== name);
+  await saveExercises();
+  renderHome();
+  showToast('Övning borttagen');
+}
+
 function renderHome() {
   const el = document.getElementById('exercise-list');
   el.innerHTML = '';
   exercises.strength.forEach(ex => {
     const last = getLastSession(ex);
     const lastText = last?.sets ? last.sets.map(s => `${s.kg}×${s.reps}`).join(' ') : 'Inget loggat';
-    const btn = document.createElement('button');
-    btn.className = 'exercise-btn';
-    btn.innerHTML = `<span>${ex}</span><span class="last">${lastText}</span>`;
-    btn.onclick = () => openLog(ex, 'strength');
-    el.appendChild(btn);
+    el.appendChild(makeExerciseRow(ex, 'strength', lastText));
   });
 
   const cl = document.getElementById('cardio-list');
@@ -250,11 +275,7 @@ function renderHome() {
       if (last.cardio.dist) p.push(last.cardio.dist + 'km');
       lastText = p.join(' · ');
     }
-    const btn = document.createElement('button');
-    btn.className = 'exercise-btn';
-    btn.innerHTML = `<span>${ex}</span><span class="last">${lastText}</span>`;
-    btn.onclick = () => openLog(ex, 'cardio');
-    cl.appendChild(btn);
+    cl.appendChild(makeExerciseRow(ex, 'cardio', lastText));
   });
 }
 
@@ -428,7 +449,7 @@ if ('serviceWorker' in navigator) {
 openDB().then(async () => {
   await loadData();
   document.getElementById('loading').style.display = 'none';
-  renderHome();
+  showScreen('s-home');
 });
 </script>
 </body>

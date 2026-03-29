@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="manifest" href="manifest.json">
+<title>GymLog</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a1a;background:#f5f5f5;-webkit-tap-highlight-color:transparent}
+.screen{display:none;min-height:100dvh;padding-bottom:80px}
+.screen.active{display:block}
+.topbar{padding:56px 20px 12px;background:#fff;border-bottom:0.5px solid #e5e5e5;position:sticky;top:0;z-index:10}
+.topbar h2{font-size:22px;font-weight:600}
+.page{padding:16px}
+.card{background:#fff;border:0.5px solid #e5e5e5;border-radius:14px;overflow:hidden;margin-bottom:12px}
+.card-header{padding:10px 16px;font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.06em;border-bottom:0.5px solid #f0f0f0}
+.exercise-btn{width:100%;background:none;border:none;border-bottom:0.5px solid #f0f0f0;padding:14px 16px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:16px;color:#1a1a1a;-webkit-tap-highlight-color:transparent}
+.exercise-btn:last-child{border-bottom:none}
+.exercise-btn:active{background:#f5f5f5}
+.exercise-btn .last{font-size:13px;color:#888}
+.info-box{background:#f5f5f5;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#666;border-left:3px solid #ddd}
+.add-row{display:flex;gap:8px;padding:10px 12px}
+.add-row input{flex:1;border:0.5px solid #e5e5e5;border-radius:10px;padding:10px 12px;font-size:15px;background:#fafafa;color:#1a1a1a;outline:none;-webkit-appearance:none}
+.add-row input:focus{border-color:#aaa;background:#fff}
+.add-row button{padding:10px 16px;border:0.5px solid #e5e5e5;border-radius:10px;background:#fff;cursor:pointer;font-size:14px;color:#1a1a1a;white-space:nowrap;font-weight:500}
+.add-row button:active{background:#f0f0f0}
+.back-btn{background:none;border:none;color:#007aff;font-size:17px;cursor:pointer;display:flex;align-items:center;gap:4px;padding:0}
+.last-info{background:#f5f5f5;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#666}
+.last-info strong{color:#1a1a1a}
+.suggestion{font-size:12px;color:#007aff;margin-top:4px}
+.col-labels{display:grid;grid-template-columns:1fr 1fr 44px;gap:8px;padding:0 2px;margin-bottom:6px}
+.col-labels span{font-size:12px;color:#888}
+.set-row{display:grid;grid-template-columns:1fr 1fr 44px;gap:8px;margin-bottom:8px}
+.set-row input{width:100%;border:0.5px solid #e5e5e5;border-radius:10px;padding:11px 12px;font-size:16px;background:#fafafa;color:#1a1a1a;outline:none;-webkit-appearance:none;text-align:center}
+.set-row input:focus{border-color:#aaa;background:#fff}
+.del-btn{background:none;border:0.5px solid #e5e5e5;border-radius:10px;height:44px;cursor:pointer;color:#888;font-size:18px}
+.del-btn:active{background:#fee2e2;color:#ef4444}
+.add-set-btn{width:100%;padding:11px;border:0.5px dashed #ccc;border-radius:10px;background:none;cursor:pointer;color:#888;font-size:14px;margin:4px 0 16px}
+.add-set-btn:active{background:#f5f5f5}
+.primary-btn{width:100%;padding:15px;background:#1a1a1a;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.primary-btn:active{opacity:0.8}
+.cardio-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.field label{font-size:12px;color:#888;display:block;margin-bottom:5px;font-weight:500}
+.field input{width:100%;border:0.5px solid #e5e5e5;border-radius:10px;padding:12px;font-size:16px;background:#fafafa;color:#1a1a1a;outline:none;-webkit-appearance:none;text-align:center}
+.field input:focus{border-color:#aaa;background:#fff}
+.history-item{background:#fff;border:0.5px solid #e5e5e5;border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.history-item .date{font-size:12px;color:#888;margin-bottom:4px;text-transform:capitalize}
+.history-item .name{font-weight:600;font-size:15px;margin-bottom:5px}
+.history-item .detail{font-size:14px;color:#555}
+.cardio-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:8px;background:#e0f2fe;color:#0369a1;margin-right:6px;font-weight:500}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 22px;border-radius:100px;font-size:14px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:99;white-space:nowrap}
+.toast.show{opacity:1}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:0.5px solid #e5e5e5;display:flex;padding-bottom:env(safe-area-inset-bottom)}
+.nav-btn{flex:1;padding:10px 8px;background:none;border:none;cursor:pointer;font-size:11px;color:#888;display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:500}
+.nav-btn.active{color:#1a1a1a}
+.nav-btn svg{width:22px;height:22px}
+.data-btn{width:100%;padding:14px;border:0.5px solid #e5e5e5;border-radius:12px;background:#fff;cursor:pointer;font-size:15px;color:#1a1a1a;font-weight:500;margin-bottom:10px;text-align:left}
+.data-btn:active{background:#f5f5f5}
+.danger{color:#ef4444;border-color:#fecaca}
+.danger:active{background:#fee2e2}
+.settings-label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 8px;padding:0 4px}
+.settings-note{font-size:13px;color:#888;padding:4px}
+#loading{position:fixed;inset:0;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:15px;color:#888;z-index:999}
+</style>
+</head>
+<body>
+
+<div id="loading">Laddar...</div>
+
+<div id="s-home" class="screen">
+  <div class="topbar"><h2>Träning</h2></div>
+  <div class="page">
+    <div class="info-box">Vikten ökas med 2.5kg när du klarar 8+ reps i snitt per set.</div>
+    <div class="card">
+      <div class="card-header">Styrka</div>
+      <div id="exercise-list"></div>
+      <div class="add-row">
+        <input id="new-exercise-input" placeholder="Ny övning..." />
+        <button onclick="addExercise('strength')">Lägg till</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Cardio</div>
+      <div id="cardio-list"></div>
+      <div class="add-row">
+        <input id="new-cardio-input" placeholder="Ny övning..." />
+        <button onclick="addExercise('cardio')">Lägg till</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="s-log" class="screen">
+  <div class="topbar" style="display:flex;align-items:center;gap:12px">
+    <button class="back-btn" onclick="showScreen('s-home')">&#8249; Tillbaka</button>
+  </div>
+  <div class="page">
+    <h2 id="log-title" style="margin-bottom:16px;font-size:20px;font-weight:600"></h2>
+    <div id="last-info-box" class="last-info" style="display:none"></div>
+    <div id="strength-log">
+      <div class="col-labels"><span>Kg</span><span>Reps</span><span></span></div>
+      <div id="sets-container"></div>
+      <button class="add-set-btn" onclick="addSet()">+ Lägg till set</button>
+    </div>
+    <div id="cardio-log" style="display:none">
+      <div class="cardio-grid">
+        <div class="field"><label>Tid (min)</label><input type="number" inputmode="decimal" id="cardio-time" placeholder="0" /></div>
+        <div class="field"><label>Distans (km)</label><input type="number" inputmode="decimal" id="cardio-dist" placeholder="0" /></div>
+      </div>
+    </div>
+    <button class="primary-btn" onclick="saveSession()">Spara pass</button>
+  </div>
+</div>
+
+<div id="s-history" class="screen">
+  <div class="topbar"><h2>Historik</h2></div>
+  <div class="page" id="history-list"></div>
+</div>
+
+<div id="s-settings" class="screen">
+  <div class="topbar"><h2>Inställningar</h2></div>
+  <div class="page">
+    <div class="settings-label">Data</div>
+    <button class="data-btn" onclick="exportData()">📤 Exportera data (backup)</button>
+    <button class="data-btn" onclick="document.getElementById('import-file').click()">📥 Importera data</button>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)" />
+    <button class="data-btn danger" onclick="clearData()">🗑 Rensa all data</button>
+    <p class="settings-note">Data sparas i IndexedDB — betydligt mer stabil än localStorage och rensas inte automatiskt av Android. Exportera ändå regelbundet som backup.</p>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <button class="nav-btn active" id="nav-home" onclick="showScreen('s-home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12L12 3l9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg>
+    Hem
+  </button>
+  <button class="nav-btn" id="nav-history" onclick="showScreen('s-history')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    Historik
+  </button>
+  <button class="nav-btn" id="nav-settings" onclick="showScreen('s-settings')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+    Inställningar
+  </button>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ── IndexedDB setup ──────────────────────────────────────────────
+const DB_NAME = 'gymlog';
+const DB_VER = 1;
+let db;
+
+function openDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('kv')) {
+        d.createObjectStore('kv');
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; res(db); };
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function dbGet(key) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction('kv', 'readonly');
+    const req = tx.objectStore('kv').get(key);
+    req.onsuccess = () => res(req.result ?? null);
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function dbSet(key, val) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction('kv', 'readwrite');
+    const req = tx.objectStore('kv').put(val, key);
+    req.onsuccess = () => res();
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function dbDel(key) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction('kv', 'readwrite');
+    const req = tx.objectStore('kv').delete(key);
+    req.onsuccess = () => res();
+    req.onerror = () => rej(req.error);
+  });
+}
+
+// ── State ────────────────────────────────────────────────────────
+let exercises = { strength: [], cardio: [] };
+let log = [];
+let currentExercise = '';
+let currentType = 'strength';
+
+async function loadData() {
+  exercises = (await dbGet('exercises')) || { strength: [], cardio: [] };
+  log = (await dbGet('log')) || [];
+}
+
+async function saveExercises() { await dbSet('exercises', exercises); }
+async function saveLog() { await dbSet('log', log); }
+
+// ── Helpers ──────────────────────────────────────────────────────
+function getLastSession(ex) {
+  return [...log].reverse().find(e => e.exercise === ex) || null;
+}
+
+function getSuggestion(last) {
+  if (!last?.sets) return null;
+  const reps = last.sets.map(s => parseFloat(s.reps)).filter(Boolean);
+  if (!reps.length) return null;
+  const avg = reps.reduce((a, b) => a + b, 0) / reps.length;
+  const kg = parseFloat(last.sets[0]?.kg);
+  return avg >= 8 ? (kg + 2.5).toFixed(1) : null;
+}
+
+// ── Render ───────────────────────────────────────────────────────
+function renderHome() {
+  const el = document.getElementById('exercise-list');
+  el.innerHTML = '';
+  exercises.strength.forEach(ex => {
+    const last = getLastSession(ex);
+    const lastText = last?.sets ? last.sets.map(s => `${s.kg}×${s.reps}`).join(' ') : 'Inget loggat';
+    const btn = document.createElement('button');
+    btn.className = 'exercise-btn';
+    btn.innerHTML = `<span>${ex}</span><span class="last">${lastText}</span>`;
+    btn.onclick = () => openLog(ex, 'strength');
+    el.appendChild(btn);
+  });
+
+  const cl = document.getElementById('cardio-list');
+  cl.innerHTML = '';
+  exercises.cardio.forEach(ex => {
+    const last = getLastSession(ex);
+    let lastText = 'Inget loggat';
+    if (last?.cardio) {
+      const p = [];
+      if (last.cardio.time) p.push(last.cardio.time + 'min');
+      if (last.cardio.dist) p.push(last.cardio.dist + 'km');
+      lastText = p.join(' · ');
+    }
+    const btn = document.createElement('button');
+    btn.className = 'exercise-btn';
+    btn.innerHTML = `<span>${ex}</span><span class="last">${lastText}</span>`;
+    btn.onclick = () => openLog(ex, 'cardio');
+    cl.appendChild(btn);
+  });
+}
+
+function openLog(ex, type) {
+  currentExercise = ex;
+  currentType = type;
+  document.getElementById('log-title').textContent = ex;
+  const last = getLastSession(ex);
+  const infoBox = document.getElementById('last-info-box');
+
+  if (type === 'strength') {
+    document.getElementById('strength-log').style.display = 'block';
+    document.getElementById('cardio-log').style.display = 'none';
+    if (last?.sets) {
+      const dateStr = new Date(last.date).toLocaleDateString('sv-SE');
+      const setsText = last.sets.map(s => `${s.kg}kg×${s.reps}`).join(', ');
+      const sugg = getSuggestion(last);
+      infoBox.style.display = 'block';
+      infoBox.innerHTML = `<strong>${dateStr}</strong>: ${setsText}${sugg ? `<div class="suggestion">Förslag idag: ${sugg}kg</div>` : ''}`;
+    } else infoBox.style.display = 'none';
+
+    const c = document.getElementById('sets-container');
+    c.innerHTML = '';
+    const pf = last?.sets ? last.sets.slice(0, 3) : [];
+    if (pf.length) pf.forEach(s => addSet(s.kg, s.reps));
+    else { addSet(); addSet(); addSet(); }
+  } else {
+    document.getElementById('strength-log').style.display = 'none';
+    document.getElementById('cardio-log').style.display = 'block';
+    if (last?.cardio) {
+      const dateStr = new Date(last.date).toLocaleDateString('sv-SE');
+      const p = [];
+      if (last.cardio.time) p.push(last.cardio.time + 'min');
+      if (last.cardio.dist) p.push(last.cardio.dist + 'km');
+      infoBox.style.display = 'block';
+      infoBox.innerHTML = `<strong>${dateStr}</strong>: ${p.join(' · ')}`;
+    } else infoBox.style.display = 'none';
+    document.getElementById('cardio-time').value = '';
+    document.getElementById('cardio-dist').value = '';
+  }
+  showScreen('s-log');
+}
+
+function addSet(kg = '', reps = '') {
+  const c = document.getElementById('sets-container');
+  const row = document.createElement('div');
+  row.className = 'set-row';
+  row.innerHTML = `<input type="number" inputmode="decimal" placeholder="0" value="${kg}" /><input type="number" inputmode="numeric" placeholder="0" value="${reps}" /><button class="del-btn" onclick="this.parentElement.remove()">×</button>`;
+  c.appendChild(row);
+}
+
+async function saveSession() {
+  if (currentType === 'strength') {
+    const rows = document.querySelectorAll('#sets-container .set-row');
+    const sets = [];
+    rows.forEach(row => {
+      const i = row.querySelectorAll('input');
+      const kg = i[0].value.trim();
+      const reps = i[1].value.trim();
+      if (kg && reps) sets.push({ kg, reps });
+    });
+    if (!sets.length) { showToast('Lägg till minst ett set'); return; }
+    log.push({ exercise: currentExercise, type: 'strength', date: new Date().toISOString(), sets });
+  } else {
+    const time = document.getElementById('cardio-time').value.trim();
+    const dist = document.getElementById('cardio-dist').value.trim();
+    if (!time && !dist) { showToast('Fyll i tid eller distans'); return; }
+    log.push({ exercise: currentExercise, type: 'cardio', date: new Date().toISOString(), cardio: { time, dist } });
+  }
+  await saveLog();
+  showToast('Sparat! ✓');
+  setTimeout(() => { showScreen('s-home'); renderHome(); }, 800);
+}
+
+async function addExercise(type) {
+  const id = type === 'strength' ? 'new-exercise-input' : 'new-cardio-input';
+  const input = document.getElementById(id);
+  const name = input.value.trim();
+  if (!name) return;
+  if (exercises[type].includes(name)) { showToast('Finns redan'); return; }
+  exercises[type].push(name);
+  await saveExercises();
+  input.value = '';
+  renderHome();
+}
+
+function renderHistory() {
+  const sorted = [...log].reverse();
+  const el = document.getElementById('history-list');
+  if (!sorted.length) { el.innerHTML = '<p style="color:#888;font-size:15px;padding:8px 4px">Inga pass loggade ännu.</p>'; return; }
+  el.innerHTML = '';
+  sorted.forEach(entry => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    const dateStr = new Date(entry.date).toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'short' });
+    let content = '';
+    if (entry.type === 'cardio' && entry.cardio) {
+      const p = [];
+      if (entry.cardio.time) p.push(entry.cardio.time + 'min');
+      if (entry.cardio.dist) p.push(entry.cardio.dist + 'km');
+      content = `<span class="cardio-badge">Cardio</span>${p.join(' · ')}`;
+    } else if (entry.sets) content = entry.sets.map(s => `${s.kg}kg×${s.reps}`).join('  ');
+    div.innerHTML = `<div class="date">${dateStr}</div><div class="name">${entry.exercise}</div><div class="detail">${content}</div>`;
+    el.appendChild(div);
+  });
+}
+
+async function exportData() {
+  const data = { exercises, log };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `gymlog_${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Exporterat!');
+}
+
+async function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.exercises) { exercises = data.exercises; await saveExercises(); }
+      if (data.log) { log = data.log; await saveLog(); }
+      showToast('Importerat!');
+      renderHome();
+    } catch { showToast('Ogiltig fil'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+async function clearData() {
+  if (confirm('Är du säker? All data raderas permanent.')) {
+    exercises = { strength: [], cardio: [] };
+    log = [];
+    await saveExercises();
+    await saveLog();
+    showToast('Data rensad');
+    renderHome();
+  }
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const map = { 's-home': 'nav-home', 's-history': 'nav-history', 's-settings': 'nav-settings' };
+  if (map[id]) document.getElementById(map[id]).classList.add('active');
+  if (id === 's-history') renderHistory();
+  if (id === 's-home') renderHome();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── Service Worker ───────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+openDB().then(async () => {
+  await loadData();
+  document.getElementById('loading').style.display = 'none';
+  renderHome();
+});
+</script>
+</body>
+</html>
